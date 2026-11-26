@@ -25,4 +25,5 @@ with gr.Blocks(title="Bangla Toon Studio") as demo:
     status = gr.Textbox(label="অবস্থা")
     btn.click(go, [script, wav, timing, style], [video, status])
 
-demo.launch(share=True)
+port = int(os.environ.get("PORT", "7860"))
+demo.launch(server_name="0.0.0.0", server_port=port, share=False)
