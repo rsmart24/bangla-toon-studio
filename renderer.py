@@ -7,7 +7,7 @@ P={"paper":"#F6F1E7","terracotta":"#C8643B","gold":"#F2A900","red":"#B3202A","te
 def duration(wav):
     with wave.open(wav,"rb") as f: return f.getnframes()/f.getframerate()
 def font(size):
-    for p in ["/usr/share/fonts/truetype/noto/NotoSansBengali-Bold.ttf","/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]:
+    for p in ["/usr/share/fonts/truetype/noto/NotoSansBengali-Bold.ttf","/usr/share/fonts/truetype/noto/NotoSansBengaliUI-Bold.ttf","/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]:
         if os.path.exists(p):
             try:return ImageFont.truetype(p,size)
             except:pass
@@ -22,7 +22,7 @@ def captions(script, timing, dur):
                 for x in words:
                     buf.append(str(x.get("text","")))
                     if len(buf)>=4 or str(x.get("text","")).endswith(("।","?","!")):
-                        out.append((float(buf[0].get("start",0)) if isinstance(buf[0],dict) else float(x["start"]),float(x["end"])," ".join(str(y.get("text","")) for y in words[max(0,len(out)*4):len(out)*4+len(buf)])))
+                        out.append((float(x["start"]),float(x["end"])," ".join(buf)))
                         buf=[]
                 if out:return out
         except:pass
@@ -62,11 +62,12 @@ def frame(t, caption):
     return im
 def render(script_file,wav_file,json_file=None,style_file=None,progress=None):
     ff=shutil.which("ffmpeg")
-    if not ff: raise RuntimeError("FFmpeg পাওয়া যায়নি; Colab setup cell চালান।")
+    if not ff: raise RuntimeError("FFmpeg পাওয়া যায়নি; সার্ভার সেটআপ পরীক্ষা করুন।")
     dur=duration(wav_file)
     if dur<=0: raise RuntimeError("WAV duration পড়া যায়নি।")
     script=Path(script_file).read_text(encoding="utf-8").strip()
-    caps=captions(script,json_file,dur); total=max(1,math.ceil(dur*FPS)); out="/content/bangla_toon_v1.mp4"
+    caps=captions(script,json_file,dur); total=max(1,math.ceil(dur*FPS))
+    out=os.path.join(tempfile.gettempdir(),"bangla_toon_v1.mp4")
     with tempfile.TemporaryDirectory() as td:
         for i in range(total):
             t=i/FPS; cap=next((s for a,b,s in caps if a<=t<b),"")
