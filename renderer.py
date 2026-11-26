@@ -18,12 +18,13 @@ def captions(script, timing, dur):
             d=json.loads(Path(timing).read_text(encoding="utf-8"))
             words=d.get("words",d if isinstance(d,list) else [])
             if words and all("start" in x and "end" in x for x in words):
-                out=[]; buf=[]
+                out=[]; buf=[]; start=None; end=None
                 for x in words:
-                    buf.append(str(x.get("text","")))
+                    if start is None: start=float(x["start"])
+                    end=float(x["end"]); buf.append(str(x.get("text","")))
                     if len(buf)>=4 or str(x.get("text","")).endswith(("।","?","!")):
-                        out.append((float(x["start"]),float(x["end"])," ".join(buf)))
-                        buf=[]
+                        out.append((start,end," ".join(buf))); buf=[]; start=None
+                if buf and start is not None: out.append((start,end," ".join(buf)))
                 if out:return out
         except:pass
     parts=[x.strip() for x in re.split(r"(?<=[।!?])\\s+|\\n+",script) if x.strip()] or [script]
@@ -62,7 +63,12 @@ def frame(t, caption):
     return im
 def render(script_file,wav_file,json_file=None,style_file=None,progress=None):
     ff=shutil.which("ffmpeg")
-    if not ff: raise RuntimeError("FFmpeg পাওয়া যায়নি; সার্ভার সেটআপ পরীক্ষা করুন।")
+    if not ff:
+        try:
+            import imageio_ffmpeg
+            ff=imageio_ffmpeg.get_ffmpeg_exe()
+        except Exception as e:
+            raise RuntimeError("FFmpeg পাওয়া যায়নি: "+str(e))
     dur=duration(wav_file)
     if dur<=0: raise RuntimeError("WAV duration পড়া যায়নি।")
     script=Path(script_file).read_text(encoding="utf-8").strip()
